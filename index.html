@@ -26,7 +26,7 @@
 
     <div class="container">
         <h2>نظام حمامة ديلفري - معالجة الطلبات بالذكاء الاصطناعي</h2>
-        <div class="project-name">وكالة فلسطين الرقمية | إدارة العمليات</div>
+        <div class="project-name"> | إدارة العمليات</div>
         <div class="status-msg" id="status">الحالة: جاهز للعمل</div>
         
         <div class="controls">
@@ -50,7 +50,7 @@
     </div>
 
     <script>
-        // مفتاحك الجديد الذي أرسلته
+        // المفتاح النشط من صورتك الأخيرة
         const GEMINI_API_KEY = "AIzaSyCSeBUWqnloD4Qc8QVjvesz93TmgTIcMIE"; 
         
         const startBtn = document.getElementById('startBtn');
@@ -73,7 +73,7 @@
             recognition.start();
             startBtn.disabled = true;
             stopBtn.disabled = false;
-            statusMsg.innerText = "جاري الاستماع... سجل طلباتك بوضوح";
+            statusMsg.innerText = "جاري الاستماع... سجل طلبات حمامة ديلفري الآن";
         });
 
         recognition.onresult = (event) => {
@@ -96,21 +96,21 @@
             const textToAnalyze = liveText.innerText.trim();
             
             if (textToAnalyze) {
-                statusMsg.innerText = "جاري تحليل البيانات بواسطة Gemini...";
+                statusMsg.innerText = "جاري التحليل... يرجى الانتظار";
                 analyzeWithGemini(textToAnalyze);
             } else {
-                statusMsg.innerText = "تنبيه: لم يتم العثور على نص للتحليل.";
+                statusMsg.innerText = "تنبيه: لم يتم تسجيل أي نص.";
             }
         });
 
         async function analyzeWithGemini(text) {
-            // الرابط المحدث للنسخة المستقرة
-            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            // هذا الرابط هو الأدق لمفتاحك ونظام Free Tier
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
             
-            const prompt = {
-                "contents": [{
-                    "parts": [{
-                        "text": `أنت موظف إدخال بيانات في شركة "حمامة ديلفري". حلل النص واستخرج كافة الطلبات الموجودة فيه بصيغة JSON Array فقط. يمنع استخدام الفواصل أو النقاط نهائياً. البيانات المطلوبة لكل طلب: (customer_name, location, order_details, price). النص: "${text}"`
+            const requestBody = {
+                contents: [{
+                    parts: [{
+                        text: `أنت مساعد إداري لشركة "حمامة ديلفري". استخرج البيانات التالية من النص بصيغة JSON Array فقط. لا تستخدم فواصل أو نقاط نهائياً. المطلوبات: (customer_name, location, order_details, price). النص: "${text}"`
                     }]
                 }]
             };
@@ -119,16 +119,15 @@
                 const response = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(prompt)
+                    body: JSON.stringify(requestBody)
                 });
 
+                const data = await response.json();
+
                 if (!response.ok) {
-                    const errorDetails = await response.json();
-                    throw new Error(errorDetails.error ? errorDetails.error.message : "فشل في الاتصال");
+                    throw new Error(data.error ? data.error.message : "خطأ في الاتصال بالسيرفر");
                 }
 
-                const data = await response.json();
-                
                 if (data.candidates && data.candidates[0].content) {
                     let responseContent = data.candidates[0].content.parts[0].text;
                     const jsonMatch = responseContent.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
@@ -141,22 +140,22 @@
                             const row = `<tr>
                                 <td>${item.customer_name || "غير معروف"}</td>
                                 <td>${item.location || "غير محدد"}</td>
-                                <td>${item.order_details || "لا يوجد"}</td>
+                                <td>${item.order_details || "بدون تفاصيل"}</td>
                                 <td>${item.price || "0"}</td>
                             </tr>`;
                             tableBody.innerHTML += row;
                         });
-                        statusMsg.innerText = "تم تحديث جدول العمليات بنجاح.";
+                        statusMsg.innerText = "تمت المعالجة بنجاح.";
                     }
                 }
             } catch (error) {
                 console.error("Analysis Error:", error);
-                statusMsg.innerText = "حدث خطأ: " + error.message;
+                statusMsg.innerText = "خطأ: " + error.message;
             }
         }
 
-        recognition.onerror = (event) => {
-            statusMsg.innerText = "خطأ في الميكروفون: " + event.error;
+        recognition.onerror = () => {
+            statusMsg.innerText = "خطأ في الوصول للميكروفون.";
             startBtn.disabled = false;
         };
     </script>
