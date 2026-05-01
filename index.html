@@ -1,144 +1,59 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام حمامة ديلفري الذكي</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { width: 95%; max-width: 1100px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        h2 { color: #1a73e8; border-bottom: 2px solid #e8eaed; padding-bottom: 10px; }
-        .controls { margin: 20px 0; }
-        button { padding: 12px 25px; font-size: 16px; cursor: pointer; border: none; border-radius: 8px; margin-left: 10px; transition: 0.2s; font-weight: bold; }
-        #startBtn { background-color: #34a853; color: white; }
-        #stopBtn { background-color: #ea4335; color: white; }
-        button:disabled { background-color: #dadce0; cursor: not-allowed; }
-        .live-preview { background: #f8f9fa; border-right: 4px solid #1a73e8; padding: 15px; margin: 15px 0; min-height: 40px; color: #5f6368; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #e8eaed; padding: 15px; text-align: center; }
-        th { background-color: #1a73e8; color: white; }
-        tr:nth-child(even) { background-color: #f8f9fa; }
-        .status-msg { font-weight: bold; color: #1a73e8; margin-top: 5px; }
-    </style>
-</head>
-<body>
+async function analyzeWithGemini(text) {
+    if (!text.trim()) {
+        statusMsg.innerText = "لم يتم تسجيل أي صوت.";
+        return;
+    }
 
-    <div class="container">
-        <h2>نظام حمامة ديلفري - معالجة الطلبات بالذكاء الاصطناعي</h2>
-        <div class="status-msg" id="status">الحالة: جاهز للعمل</div>
-        
-        <div class="controls">
-            <button id="startBtn">بدء التسجيل المستمر</button>
-            <button id="stopBtn" disabled>إيقاف وتحليل الطلب</button>
-        </div>
+    // المفتاح الخاص بك (تأكد أنه نشط في Google AI Studio)
+    const GEMINI_API_KEY = "AlzaSyDsqmZVLSAlK1pmzhk-Qoq6w1YnqHBhmq3E";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    
+    // البرومبت مع تعليمات صارمة للالتزام بأسلوبك (بدون فواصل أو نقاط)
+    const prompt = `Return ONLY a JSON object for this delivery order.
+    Keys: (customer_name, location, order_details, price).
+    Arabic values only. NO dots, NO commas.
+    Text: "${text}"`;
 
-        <div class="live-preview" id="liveText">تكلم ليظهر النص هنا...</div>
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
+        });
 
-        <table id="deliveryTable">
-            <thead>
-                <tr>
-                    <th>اسم الزبون</th>
-                    <th>المنطقة / العنوان</th>
-                    <th>تفاصيل الطلب</th>
-                    <th>السعر (شيكل)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- النتائج ستظهر هنا -->
-            </tbody>
-        </table>
-    </div>
+        const data = await response.json();
 
-    <script>
-        const GEMINI_API_KEY = "AlzaSyDsqmZVLSAlK1pmzhk-Qoq6w1YnqHBhmq3E"; // مفتاحك من الصورة
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const liveText = document.getElementById('liveText');
-        const tableBody = document.querySelector('#deliveryTable tbody');
-        const statusMsg = document.getElementById('status');
-
-        let finalTranscript = "";
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        
-        if (!SpeechRecognition) {
-            alert("متصفحك لا يدعم التعرف على الصوت. استخدم Chrome أو Brave مع تفعيل الخدمات.");
+        // فحص إذا كان هناك مشكلة في المفتاح أو الحصة المجانية
+        if (data.error) {
+            console.error("Gemini Error:", data.error);
+            statusMsg.innerText = "خطأ من جوجل: " + data.error.message;
+            return;
         }
 
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'ar-SA';
-        recognition.continuous = true;
-        recognition.interimResults = true;
+        let responseText = data.candidates[0].content.parts[0].text;
+        
+        // استخراج الـ JSON من بين أي نصوص زائدة
+        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const cleanJson = JSON.parse(jsonMatch[0]);
 
-        startBtn.addEventListener('click', () => {
-            finalTranscript = "";
-            recognition.start();
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-            statusMsg.innerText = "جاري الاستماع... (سجل الطلب بالكامل ثم اضغط إيقاف)";
-            liveText.innerText = "";
-        });
-
-        recognition.onresult = (event) => {
-            let interimTranscript = "";
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript + " ";
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-            }
-            liveText.innerText = finalTranscript + interimTranscript;
-        };
-
-        stopBtn.addEventListener('click', () => {
-            recognition.stop();
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            statusMsg.innerText = "جاري تحليل البيانات بواسطة جيميناي...";
-            analyzeWithGemini(finalTranscript);
-        });
-
-        async function analyzeWithGemini(text) {
-            if (!text.trim()) {
-                statusMsg.innerText = "لم يتم تسجيل أي صوت.";
-                return;
-            }
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            const row = `<tr>
+                <td>${cleanJson.customer_name || "غير معروف"}</td>
+                <td>${cleanJson.location || "غير محدد"}</td>
+                <td>${cleanJson.order_details || "بدون تفاصيل"}</td>
+                <td>${cleanJson.price || "0"}</td>
+            </tr>`;
             
-            const prompt = `أنت موظف إدخال بيانات في شركة "حمامة ديلفري". حلل النص التالي واستخرج البيانات بصيغة JSON فقط.
-            لا تستخدم أي فواصل أو نقاط في النصوص المستخرجة.
-            البيانات المطلوبة: (customer_name, location, order_details, price).
-            النص: "${text}"`;
-
-            try {
-                const response = await fetch(url, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
-                    })
-                });
-
-                const data = await response.json();
-                const responseText = data.candidates[0].content.parts[0].text;
-                const cleanJson = JSON.parse(responseText.replace(/```json|```/g, ""));
-
-                const row = `<tr>
-                    <td>${cleanJson.customer_name || "غير معروف"}</td>
-                    <td>${cleanJson.location || "غير محدد"}</td>
-                    <td>${cleanJson.order_details || "بدون تفاصيل"}</td>
-                    <td>${cleanJson.price || "0"}</td>
-                </tr>`;
-                
-                tableBody.innerHTML += row;
-                statusMsg.innerText = "تمت إضافة الطلب للجدول بنجاح.";
-
-            } catch (error) {
-                console.error("Error:", error);
-                statusMsg.innerText = "حدث خطأ في التحليل، تأكد من اتصال الإنترنت.";
-            }
+            tableBody.innerHTML += row;
+            statusMsg.innerText = "تم تحليل طلب حمامة ديلفري بنجاح!";
+        } else {
+            throw new Error("Invalid response format");
         }
-    </script>
-</body>
-</html>
+
+    } catch (error) {
+        console.error("Detailed Error:", error);
+        statusMsg.innerText = "فشل في معالجة البيانات، يرجى المحاولة مرة أخرى.";
+    }
+}
