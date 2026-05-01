@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مسجل الصوت وتحويله لنص</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 50px;
+        }
+        .controls {
+            margin-bottom: 30px;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: 0.3s;
+            margin: 5px;
+        }
+        #startBtn { background-color: #28a745; color: white; }
+        #stopBtn { background-color: #dc3545; color: white; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        table {
+            width: 80%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 15px;
+            text-align: right;
+        }
+        th { background-color: #007bff; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .status { margin-bottom: 10px; font-weight: bold; color: #555; }
+    </style>
+</head>
+<body>
+
+    <h2>تحويل تسجيل الصوت إلى نص في جدول</h2>
+    
+    <div class="status" id="status">جاهز للتسجيل...</div>
+
+    <div class="controls">
+        <button id="startBtn">ابدأ التسجيل</button>
+        <button id="stopBtn" disabled>إيقاف وحفظ</button>
+    </div>
+
+    <table id="resultTable">
+        <thead>
+            <tr>
+                <th>الرقم</th>
+                <th>النص المحول</th>
+                <th>الوقت</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- هنا ستظهر النتائج -->
+        </tbody>
+    </table>
+
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusText = document.getElementById('status');
+        const tableBody = document.querySelector('#resultTable tbody');
+        let rowCount = 1;
+
+        // التحقق من دعم المتصفح لـ Web Speech API
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            alert("عذراً، متصفحك لا يدعم خاصية التعرف على الصوت. جرب متصفح كروم.");
+        } else {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ar-SA'; // ضبط اللغة للعربية
+            recognition.continuous = false; // التوقف عند انتهاء الكلام
+            recognition.interimResults = false; // عدم عرض نتائج مؤقتة
+
+            startBtn.addEventListener('click', () => {
+                recognition.start();
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                statusText.innerText = "جاري الاستماع... تكلم الآن";
+                statusText.style.color = "red";
+            });
+
+            stopBtn.addEventListener('click', () => {
+                recognition.stop();
+            });
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                addTextToTable(transcript);
+                statusText.innerText = "تم التحويل بنجاح!";
+                statusText.style.color = "green";
+            };
+
+            recognition.onend = () => {
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                if(statusText.innerText === "جاري الاستماع... تكلم الآن") {
+                    statusText.innerText = "انتهى التسجيل.";
+                    statusText.style.color = "#555";
+                }
+            };
+
+            recognition.onerror = (event) => {
+                statusText.innerText = "حدث خطأ: " + event.error;
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            };
+        }
+
+        function addTextToTable(text) {
+            const now = new Date();
+            const timeString = now.getHours() + ":" + now.getMinutes().toString().padStart(2, '0');
+            
+            const row = `<tr>
+                <td>${rowCount++}</td>
+                <td>${text}</td>
+                <td>${timeString}</td>
+            </tr>`;
+            
+            tableBody.innerHTML += row;
+        }
+    </script>
+
+</body>
+</html>
