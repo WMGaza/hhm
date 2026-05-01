@@ -14,7 +14,7 @@
         #startBtn { background-color: #34a853; color: white; }
         #stopBtn { background-color: #ea4335; color: white; }
         button:disabled { background-color: #dadce0; cursor: not-allowed; }
-        .live-preview { background: #f8f9fa; border-right: 4px solid #1a73e8; padding: 15px; margin: 15px 0; min-height: 50px; color: #5f6368; line-height: 1.6; }
+        .live-preview { background: #f8f9fa; border-right: 4px solid #1a73e8; padding: 15px; margin: 15px 0; min-height: 50px; color: #333; line-height: 1.6; font-size: 18px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
         th, td { border: 1px solid #e8eaed; padding: 15px; text-align: center; }
         th { background-color: #1a73e8; color: white; }
@@ -34,7 +34,7 @@
             <button id="stopBtn" disabled>إيقاف وتحليل الطلب</button>
         </div>
 
-        <div class="live-preview" id="liveText">تكلم ليظهر النص المسجل هنا مباشرة...</div>
+        <div class="live-preview" id="liveText"></div>
 
         <table id="deliveryTable">
             <thead>
@@ -51,7 +51,6 @@
     </div>
 
     <script>
-        // تم تحديث المفتاح الجديد هنا
         const GEMINI_API_KEY = "AIzaSyCSeBUWqnloD4Qc8QVjvesz93TmgTIcMIE"; 
         
         const startBtn = document.getElementById('startBtn');
@@ -62,23 +61,19 @@
 
         let finalTranscript = "";
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        
-        if (!SpeechRecognition) {
-            statusMsg.innerText = "خطأ: المتصفح لا يدعم التعرف على الصوت.";
-        }
-
         const recognition = new SpeechRecognition();
+
         recognition.lang = 'ar-SA';
         recognition.continuous = true;
         recognition.interimResults = true;
 
         startBtn.addEventListener('click', () => {
             finalTranscript = "";
+            liveText.innerText = "";
             recognition.start();
             startBtn.disabled = true;
             stopBtn.disabled = false;
-            statusMsg.innerText = "جاري الاستماع... (سجل الطلب بالكامل ثم اضغط إيقاف)";
-            liveText.innerText = "";
+            statusMsg.innerText = "جاري الاستماع... سجل طلباتك بوضوح";
         });
 
         recognition.onresult = (event) => {
@@ -97,23 +92,28 @@
             recognition.stop();
             startBtn.disabled = false;
             stopBtn.disabled = true;
-            statusMsg.innerText = "جاري تحليل البيانات بواسطة Gemini...";
-            analyzeWithGemini(finalTranscript);
+            
+            // سحب النص من المعاينة مباشرة لضمان عدم ضياع أي كلمة
+            const textToAnalyze = liveText.innerText.trim();
+            
+            if (textToAnalyze) {
+                statusMsg.innerText = "جاري تحليل البيانات بواسطة Gemini...";
+                analyzeWithGemini(textToAnalyze);
+            } else {
+                statusMsg.innerText = "تنبيه: لم يتم العثور على نص للتحليل.";
+            }
         });
 
         async function analyzeWithGemini(text) {
-            if (!text.trim()) {
-                statusMsg.innerText = "تنبيه: لم يتم تسجيل أي نص للتحليل.";
-                return;
-            }
-
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
             
+            // تم تخصيص البرومبت ليستخرج عدة طلبات إذا وجدت (Array of JSON)
             const prompt = `أنت موظف إدخال بيانات في شركة "حمامة ديلفري". 
-            حلل النص التالي واستخرج منه المعلومات بصيغة JSON فقط.
-            لا تستخدم الفواصل أو النقاط في القيم المستخرجة نهائياً.
-            البيانات المطلوبة: (customer_name, location, order_details, price).
-            النص المسجل: "${text}"`;
+            حلل النص واستخرج كافة الطلبات الموجودة فيه.
+            الناتج يجب أن يكون JSON Array فقط.
+            لا تستخدم فواصل أو نقاط في القيم المستخرجة.
+            البيانات المطلوبة لكل طلب: (customer_name, location, order_details, price).
+            النص: "${text}"`;
 
             try {
                 const response = await fetch(url, {
@@ -125,40 +125,37 @@
                 });
 
                 const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error.message);
-                }
-
                 let responseContent = data.candidates[0].content.parts[0].text;
-                const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
                 
+                // تنظيف الرد لتحويله إلى مصفوفة برمجية
+                const jsonMatch = responseContent.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
                 if (jsonMatch) {
-                    const cleanJson = JSON.parse(jsonMatch[0]);
-
-                    const row = `<tr>
-                        <td>${cleanJson.customer_name || "غير معروف"}</td>
-                        <td>${cleanJson.location || "غير محدد"}</td>
-                        <td>${cleanJson.order_details || "لا يوجد تفاصيل"}</td>
-                        <td>${cleanJson.price || "0"}</td>
-                    </tr>`;
+                    let result = JSON.parse(jsonMatch[0]);
                     
-                    tableBody.innerHTML += row;
-                    statusMsg.innerText = "تمت إضافة الطلب بنجاح!";
-                } else {
-                    throw new Error("تنسيق البيانات غير صحيح");
-                }
+                    // إذا كان طلباً واحداً نحوله لمصفوفة ليعمل الكود بشكل موحد
+                    if (!Array.isArray(result)) result = [result];
 
+                    result.forEach(item => {
+                        const row = `<tr>
+                            <td>${item.customer_name || "غير معروف"}</td>
+                            <td>${item.location || "غير محدد"}</td>
+                            <td>${item.order_details || "لا يوجد"}</td>
+                            <td>${item.price || "0"}</td>
+                        </tr>`;
+                        tableBody.innerHTML += row;
+                    });
+                    
+                    statusMsg.innerText = "تم تحديث جدول العمليات بنجاح.";
+                }
             } catch (error) {
-                console.error("Error:", error);
-                statusMsg.innerText = "فشل التحليل: " + error.message;
+                console.error("Analysis Error:", error);
+                statusMsg.innerText = "حدث خطأ أثناء معالجة البيانات.";
             }
         }
 
-        recognition.onerror = (event) => {
-            statusMsg.innerText = "خطأ في الميكروفون: " + event.error;
+        recognition.onerror = () => {
+            statusMsg.innerText = "خطأ في الميكروفون أو الاتصال.";
             startBtn.disabled = false;
-            stopBtn.disabled = true;
         };
     </script>
 </body>
