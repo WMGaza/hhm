@@ -1,70 +1,196 @@
-// --- وظيفة المعالجة المحدثة ---
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام حمامة ديلفري - الأذن الرقمية الذكية</title>
+    <!-- مكتبة تصدير الإكسل -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root { --primary: #1a73e8; --success: #34a853; --danger: #ea4335; --dark: #202124; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 900px; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        h2 { color: var(--primary); text-align: center; margin-bottom: 20px; font-size: 1.6rem; }
+        .status-bar { font-weight: bold; color: var(--primary); background: #e8f0fe; padding: 15px; border-radius: 12px; margin-bottom: 20px; text-align: center; border: 1px solid #c2d7fa; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        button, .file-label { padding: 18px; font-size: 16px; cursor: pointer; border: none; border-radius: 14px; font-weight: bold; transition: all 0.3s ease; text-align: center; }
+        #startBtn { background: var(--success); color: white; }
+        #stopBtn { background: var(--danger); color: white; }
+        .file-label { background: #673ab7; color: white; grid-column: span 2; display: block; }
+        #exportBtn { background: var(--dark); color: white; grid-column: span 2; margin-top: 10px; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .preview-box { background: var(--dark); color: #8ab4f8; padding: 20px; min-height: 100px; border-radius: 15px; font-size: 17px; line-height: 1.6; margin-bottom: 25px; text-align: right; border: 2px solid #3c4043; white-space: pre-wrap; }
+        .table-container { width: 100%; overflow-x: auto; border-radius: 10px; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th { background: var(--primary); color: white; padding: 15px; font-size: 15px; }
+        td { border-bottom: 1px solid #eee; padding: 15px; text-align: center; color: #333; font-size: 15px; }
+        input[type="file"] { display: none; }
+        @media (max-width: 600px) {
+            .controls { grid-template-columns: 1fr; }
+            .file-label { grid-column: span 1; }
+            td { display: block; text-align: left; padding-right: 50%; position: relative; border: none; border-bottom: 1px solid #eee; }
+            td:before { position: absolute; right: 15px; font-weight: bold; content: attr(data-label); color: var(--primary); }
+            tr { display: block; border: 1px solid #ddd; margin-bottom: 15px; border-radius: 15px; padding: 10px; }
+            thead { display: none; }
+        }
+    </style>
+</head>
+<body>
 
-async function transcribeAudio(audioData) {
-    const formData = new FormData();
-    formData.append("file", audioData, "audio.mp3");
-    formData.append("model", "whisper-large-v3");
-    formData.append("language", "ar");
-    // إضافة "تلقين" لـ Whisper ليفهم السياق الغزاوي فوراً
-    formData.append("prompt", "طلبات توصيل، حمامة ديلفري، مناطق غزة: الرمال، الشجاعية، الجندي، النصر، خانيونس، رفح، شيكل");
-
-    try {
-        statusMsg.innerText = "جاري التفريغ الصوتي (Whisper)...";
-        const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${GROQ_API_KEY}` },
-            body: formData
-        });
-        const data = await res.json();
-        const rawText = data.text;
-        
-        // المرحلة الجديدة: التصحيح السياقي الذكي
-        await smartRefineAndAnalyze(rawText);
-        
-    } catch (e) {
-        statusMsg.innerText = "خطأ في الاتصال بالمحرك";
-    }
-}
-
-async function smartRefineAndAnalyze(rawText) {
-    statusMsg.innerText = "جاري التصحيح وفهم اللهجة الغزاوية...";
+<div class="container">
+    <h2>حمامة ديلفري - الأذن الرقمية الذكية</h2>
+    <div id="status" class="status-bar">جاهز لاستقبال الطلبات باللهجة الفلسطينية</div>
     
-    try {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-                model: "llama-3.3-70b-versatile",
-                messages: [
-                    { 
-                        role: "system", 
-                        content: `أنت مساعد خبير في اللهجة الفلسطينية والغزاوية. 
-                        مهمتك: تصحيح النص المفرغ صوتياً من أخطاء السمع. 
-                        قواعدك الثابتة: 
-                        1. اكتب "أميركا" بدلاً من "أمريكا" و "ترمب" بدلاً من "ترامب".
-                        2. اعتمد "إسلام آباد".
-                        3. افهم أن "الرمال، الجندي، الساحة" هي مناطق جغرافية.
-                        4. حول المبالغ المالية لأرقام واضحة (شيكل).
-                        5. أخرج النتيجة النهائية كـ JSON فقط للحقول: customer_name, location, order_details, price.` 
-                    },
-                    { 
-                        role: "user", 
-                        content: `صحح واستخرج البيانات من هذا النص العامي: ${rawText}` 
-                    }
-                ],
-                response_format: { type: "json_object" },
-                temperature: 0.1 // تقليل العشوائية لضمان الدقة الرقمية
-            })
-        });
+    <div class="controls">
+        <button id="startBtn">بدء التسجيل المباشر</button>
+        <button id="stopBtn" disabled>إيقاف وتحليل الذكاء الاصطناعي</button>
+        <label class="file-label" for="audioFile">📁 رفع تسجيل (واتساب/صوتي)</label>
+        <input type="file" id="audioFile" accept="audio/*">
+        <button id="exportBtn">تصدير الكشف إلى Excel</button>
+    </div>
 
-        const data = await response.json();
-        const result = JSON.parse(data.choices[0].message.content);
-        displayInTable(result); // وظيفة العرض في الجدول (كما في كودك السابق)
-        
-        liveText.innerText = "النص الأصلي: " + rawText;
-        statusMsg.innerText = "تمت المعالجة بنجاح بأذن رقمية ذكية";
-        
-    } catch (e) {
-        statusMsg.innerText = "خطأ في مرحلة الفهم الذكي";
+    <div id="liveText" class="preview-box">التفريغ والتحليل سيظهر هنا...</div>
+
+    <div class="table-container">
+        <table id="deliveryTable">
+            <thead>
+                <tr>
+                    <th>الزبون</th>
+                    <th>المنطقة/العنوان</th>
+                    <th>تفاصيل الطلب</th>
+                    <th>السعر (شيكل)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const GROQ_API_KEY = "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";
+    const statusMsg = document.getElementById('status');
+    const liveText = document.getElementById('liveText');
+    const tableBody = document.querySelector('#deliveryTable tbody');
+    
+    let mediaRecorder;
+    let audioChunks = [];
+
+    // 1. معالجة الملفات المرفوعة
+    document.getElementById('audioFile').onchange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            statusMsg.innerText = "جاري رفع ومعالجة الملف...";
+            await processAudio(file);
+        }
+    };
+
+    // 2. التسجيل المباشر
+    document.getElementById('startBtn').onclick = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                await processAudio(audioBlob);
+            };
+            mediaRecorder.start();
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            statusMsg.innerText = "الميكروفون يعمل.. تحدث بلهجتك الطبيعية";
+        } catch (err) {
+            statusMsg.innerText = "خطأ: يرجى السماح بالوصول للميكروفون";
+        }
+    };
+
+    document.getElementById('stopBtn').onclick = () => {
+        mediaRecorder.stop();
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('stopBtn').disabled = true;
+        statusMsg.innerText = "جاري التحليل العميق...";
+    };
+
+    // وظيفة المعالجة المركزية (Whisper + Llama Refinement)
+    async function processAudio(audioBlob) {
+        const formData = new FormData();
+        formData.append("file", audioBlob, "audio.mp3");
+        formData.append("model", "whisper-large-v3"); // أفضل نموذج للتفريغ
+        formData.append("language", "ar");
+        formData.append("prompt", "حمامة ديلفري، طلبات توصيل، غزة، الرمال، الجندي، الشجاعية، شيكل، خانيونس، رفح");
+
+        try {
+            // المرحلة 1: التفريغ الصوتي (The Ear)
+            const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${GROQ_API_KEY}` },
+                body: formData
+            });
+            const data = await res.json();
+            const rawTranscription = data.text;
+            
+            // المرحلة 2: التصحيح السياقي والاستخراج (The Brain)
+            await refineAndExtract(rawTranscription);
+        } catch (e) {
+            statusMsg.innerText = "حدث خطأ في محرك Whisper";
+        }
     }
-}
+
+    async function refineAndExtract(text) {
+        statusMsg.innerText = "جاري فهم اللكنة وتصحيح النص...";
+        try {
+            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    messages: [
+                        { 
+                            role: "system", 
+                            content: `أنت مساعد خبير في اللهجة الفلسطينية والغزاوية. 
+                            مهمتك: تصحيح النص المفرغ صوتياً واستخراج البيانات.
+                            قواعد إجبارية:
+                            1. لا تستخدم الفواصل أو النقاط نهائياً.
+                            2. استخدم "أميركا" و"ترمب" واعتمد "إسلام آباد".
+                            3. صحح أسماء المناطق (مثل الجندي، الرمال، الساحة).
+                            4. استخرج النتيجة كـ JSON Array فقط للحقول: (customer_name, location, order_details, price).` 
+                        },
+                        { role: "user", content: `حلل هذا النص المستلم من كابتن توصيل: ${text}` }
+                    ],
+                    response_format: { type: "json_object" },
+                    temperature: 0.1 // دقة عالية بدون خيال
+                })
+            });
+
+            const data = await response.json();
+            const result = JSON.parse(data.choices[0].message.content);
+            let orders = Array.isArray(result) ? result : (result.orders || Object.values(result)[0]);
+            if (!Array.isArray(orders)) orders = [orders];
+
+            orders.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td data-label="الزبون">${item.customer_name || "-"}</td>
+                    <td data-label="المنطقة">${item.location || "-"}</td>
+                    <td data-label="الطلب">${item.order_details || "-"}</td>
+                    <td data-label="السعر">${item.price || "0"}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            liveText.innerText = "النص المفرغ: " + text;
+            statusMsg.innerText = "تمت إضافة الطلبات بنجاح";
+        } catch (e) {
+            statusMsg.innerText = "خطأ في تحليل البيانات";
+        }
+    }
+
+    // تصدير الإكسل
+    document.getElementById('exportBtn').onclick = () => {
+        const table = document.getElementById("deliveryTable");
+        const wb = XLSX.utils.table_to_book(table, { sheet: "طلبات حمامة" });
+        XLSX.writeFile(wb, "Kashf_Hamama_Delivery.xlsx");
+    };
+</script>
+</body>
+</html>
