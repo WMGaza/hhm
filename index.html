@@ -46,14 +46,13 @@
                 </tr>
             </thead>
             <tbody>
-                <!-- النتائج ستظهر هنا بعد التحليل -->
             </tbody>
         </table>
     </div>
 
     <script>
-        // مفتاح API الخاص بك من الصورة التي أرفقتها
-        const GEMINI_API_KEY = "AlzaSyDsqmZVLSAlK1pmzhk-Qoq6w1YnqHBhmq3E"; 
+        // تم تحديث المفتاح الجديد هنا
+        const GEMINI_API_KEY = "AIzaSyCSeBUWqnloD4Qc8QVjvesz93TmgTIcMIE"; 
         
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
@@ -110,10 +109,9 @@
 
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
             
-            // البرومبت مخصص لمشروع "حمامة ديلفري" وبأسلوبك المفضل
-            const prompt = `أنت موظف إدخال بيانات محترف في شركة "حمامة ديلفري". 
+            const prompt = `أنت موظف إدخال بيانات في شركة "حمامة ديلفري". 
             حلل النص التالي واستخرج منه المعلومات بصيغة JSON فقط.
-            يمنع استخدام الفواصل أو النقاط في القيم المستخرجة نهائياً.
+            لا تستخدم الفواصل أو النقاط في القيم المستخرجة نهائياً.
             البيانات المطلوبة: (customer_name, location, order_details, price).
             النص المسجل: "${text}"`;
 
@@ -133,9 +131,8 @@
                 }
 
                 let responseContent = data.candidates[0].content.parts[0].text;
-                
-                // استخراج الـ JSON من النص
                 const jsonMatch = responseContent.match(/\{[\s\S]*\}/);
+                
                 if (jsonMatch) {
                     const cleanJson = JSON.parse(jsonMatch[0]);
 
@@ -153,7 +150,7 @@
                 }
 
             } catch (error) {
-                console.error("Error Detail:", error);
+                console.error("Error:", error);
                 statusMsg.innerText = "فشل التحليل: " + error.message;
             }
         }
