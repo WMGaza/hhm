@@ -14,7 +14,7 @@
         #startBtn { background-color: #34a853; color: white; }
         #stopBtn { background-color: #ea4335; color: white; }
         button:disabled { background-color: #dadce0; cursor: not-allowed; }
-        .live-preview { background: #f8f9fa; border-right: 4px solid #1a73e8; padding: 15px; margin: 15px 0; min-height: 60px; color: #333; line-height: 1.6; font-size: 18px; white-space: pre-wrap; }
+        .live-preview { background: #f8f9fa; border-right: 4px solid #1a73e8; padding: 15px; margin: 15px 0; min-height: 60px; color: #333; line-height: 1.6; font-size: 18px; white-space: pre-wrap; text-align: right; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
         th, td { border: 1px solid #e8eaed; padding: 15px; text-align: center; }
         th { background-color: #1a73e8; color: white; }
@@ -45,12 +45,12 @@
                     <th>السعر (شيكل)</th>
                 </tr>
             </thead>
-            <tbody>
-            </tbody>
+            <tbody></tbody>
         </table>
     </div>
 
     <script>
+        // مفتاحك الجديد الذي أرسلته
         const GEMINI_API_KEY = "AIzaSyCSeBUWqnloD4Qc8QVjvesz93TmgTIcMIE"; 
         
         const startBtn = document.getElementById('startBtn');
@@ -104,29 +104,32 @@
         });
 
         async function analyzeWithGemini(text) {
-            // تصحيح الرابط لضمان عدم وجود أخطاء 404
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            // الرابط المحدث للنسخة المستقرة
+            const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
             
-            const prompt = `أنت موظف إدخال بيانات في شركة "حمامة ديلفري". 
-            حلل النص واستخرج كافة الطلبات الموجودة فيه.
-            الناتج يجب أن يكون JSON Array فقط.
-            لا تستخدم فواصل أو نقاط في القيم المستخرجة نهائياً.
-            البيانات المطلوبة لكل طلب: (customer_name, location, order_details, price).
-            النص: "${text}"`;
+            const prompt = {
+                "contents": [{
+                    "parts": [{
+                        "text": `أنت موظف إدخال بيانات في شركة "حمامة ديلفري". حلل النص واستخرج كافة الطلبات الموجودة فيه بصيغة JSON Array فقط. يمنع استخدام الفواصل أو النقاط نهائياً. البيانات المطلوبة لكل طلب: (customer_name, location, order_details, price). النص: "${text}"`
+                    }]
+                }]
+            };
 
             try {
                 const response = await fetch(url, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }]
-                    })
+                    body: JSON.stringify(prompt)
                 });
+
+                if (!response.ok) {
+                    const errorDetails = await response.json();
+                    throw new Error(errorDetails.error ? errorDetails.error.message : "فشل في الاتصال");
+                }
 
                 const data = await response.json();
                 
-                // فحص الأمان لمنع خطأ TypeError
-                if (data && data.candidates && data.candidates[0] && data.candidates[0].content) {
+                if (data.candidates && data.candidates[0].content) {
                     let responseContent = data.candidates[0].content.parts[0].text;
                     const jsonMatch = responseContent.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
                     
@@ -145,8 +148,6 @@
                         });
                         statusMsg.innerText = "تم تحديث جدول العمليات بنجاح.";
                     }
-                } else {
-                    throw new Error("لم يتم استلام رد صحيح من الخادم.");
                 }
             } catch (error) {
                 console.error("Analysis Error:", error);
@@ -154,8 +155,8 @@
             }
         }
 
-        recognition.onerror = () => {
-            statusMsg.innerText = "خطأ في الميكروفون أو الاتصال.";
+        recognition.onerror = (event) => {
+            statusMsg.innerText = "خطأ في الميكروفون: " + event.error;
             startBtn.disabled = false;
         };
     </script>
