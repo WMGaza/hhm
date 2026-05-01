@@ -14,7 +14,7 @@
         #startBtn { background-color: #34a853; color: white; }
         #stopBtn { background-color: #ea4335; color: white; }
         button:disabled { background-color: #dadce0; cursor: not-allowed; }
-        .live-preview { background: #f8f9fa; border-right: 4px solid #1a73e8; padding: 15px; margin: 15px 0; min-height: 50px; color: #333; line-height: 1.6; font-size: 18px; }
+        .live-preview { background: #f8f9fa; border-right: 4px solid #1a73e8; padding: 15px; margin: 15px 0; min-height: 60px; color: #333; line-height: 1.6; font-size: 18px; white-space: pre-wrap; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
         th, td { border: 1px solid #e8eaed; padding: 15px; text-align: center; }
         th { background-color: #1a73e8; color: white; }
@@ -93,7 +93,6 @@
             startBtn.disabled = false;
             stopBtn.disabled = true;
             
-            // سحب النص من المعاينة مباشرة لضمان عدم ضياع أي كلمة
             const textToAnalyze = liveText.innerText.trim();
             
             if (textToAnalyze) {
@@ -105,13 +104,13 @@
         });
 
         async function analyzeWithGemini(text) {
+            // تصحيح الرابط لضمان عدم وجود أخطاء 404
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
             
-            // تم تخصيص البرومبت ليستخرج عدة طلبات إذا وجدت (Array of JSON)
             const prompt = `أنت موظف إدخال بيانات في شركة "حمامة ديلفري". 
             حلل النص واستخرج كافة الطلبات الموجودة فيه.
             الناتج يجب أن يكون JSON Array فقط.
-            لا تستخدم فواصل أو نقاط في القيم المستخرجة.
+            لا تستخدم فواصل أو نقاط في القيم المستخرجة نهائياً.
             البيانات المطلوبة لكل طلب: (customer_name, location, order_details, price).
             النص: "${text}"`;
 
@@ -125,31 +124,33 @@
                 });
 
                 const data = await response.json();
-                let responseContent = data.candidates[0].content.parts[0].text;
                 
-                // تنظيف الرد لتحويله إلى مصفوفة برمجية
-                const jsonMatch = responseContent.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    let result = JSON.parse(jsonMatch[0]);
+                // فحص الأمان لمنع خطأ TypeError
+                if (data && data.candidates && data.candidates[0] && data.candidates[0].content) {
+                    let responseContent = data.candidates[0].content.parts[0].text;
+                    const jsonMatch = responseContent.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
                     
-                    // إذا كان طلباً واحداً نحوله لمصفوفة ليعمل الكود بشكل موحد
-                    if (!Array.isArray(result)) result = [result];
+                    if (jsonMatch) {
+                        let result = JSON.parse(jsonMatch[0]);
+                        if (!Array.isArray(result)) result = [result];
 
-                    result.forEach(item => {
-                        const row = `<tr>
-                            <td>${item.customer_name || "غير معروف"}</td>
-                            <td>${item.location || "غير محدد"}</td>
-                            <td>${item.order_details || "لا يوجد"}</td>
-                            <td>${item.price || "0"}</td>
-                        </tr>`;
-                        tableBody.innerHTML += row;
-                    });
-                    
-                    statusMsg.innerText = "تم تحديث جدول العمليات بنجاح.";
+                        result.forEach(item => {
+                            const row = `<tr>
+                                <td>${item.customer_name || "غير معروف"}</td>
+                                <td>${item.location || "غير محدد"}</td>
+                                <td>${item.order_details || "لا يوجد"}</td>
+                                <td>${item.price || "0"}</td>
+                            </tr>`;
+                            tableBody.innerHTML += row;
+                        });
+                        statusMsg.innerText = "تم تحديث جدول العمليات بنجاح.";
+                    }
+                } else {
+                    throw new Error("لم يتم استلام رد صحيح من الخادم.");
                 }
             } catch (error) {
                 console.error("Analysis Error:", error);
-                statusMsg.innerText = "حدث خطأ أثناء معالجة البيانات.";
+                statusMsg.innerText = "حدث خطأ: " + error.message;
             }
         }
 
