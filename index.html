@@ -3,46 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام حمامة ديلفري - النسخة الاحترافية</title>
+    <title>نظام حمامة ديلفري - المعالجة الذكية</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { width: 95%; max-width: 1100px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        h2 { color: #1a73e8; border-bottom: 2px solid #e8eaed; padding-bottom: 10px; margin-bottom: 5px; }
-        .project-name { color: #5f6368; font-size: 14px; margin-bottom: 20px; }
-        .status-msg { font-weight: bold; color: #1a73e8; margin-bottom: 15px; }
-        .controls { margin: 20px 0; }
-        button { padding: 12px 25px; font-size: 16px; cursor: pointer; border: none; border-radius: 8px; margin-left: 10px; transition: 0.2s; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { width: 95%; max-width: 1100px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+        h2 { color: #1a73e8; border-bottom: 2px solid #e8eaed; padding-bottom: 15px; margin-bottom: 5px; text-align: center; }
+        .project-info { color: #70757a; font-size: 14px; text-align: center; margin-bottom: 25px; }
+        .status-bar { font-weight: bold; color: #1a73e8; background: #e8f0fe; padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
+        .controls { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        button { padding: 15px 30px; font-size: 16px; cursor: pointer; border: none; border-radius: 10px; transition: 0.3s; font-weight: bold; elevation: 2; }
         #startBtn { background-color: #34a853; color: white; }
         #stopBtn { background-color: #ea4335; color: white; }
+        button:hover:not(:disabled) { opacity: 0.9; transform: translateY(-2px); }
         button:disabled { background-color: #dadce0; cursor: not-allowed; }
-        .live-preview { background: #f8f9fa; border-right: 4px solid #1a73e8; padding: 15px; margin: 15px 0; min-height: 100px; color: #333; line-height: 1.6; font-size: 18px; white-space: pre-wrap; text-align: right; border-radius: 5px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #e8eaed; padding: 15px; text-align: center; }
-        th { background-color: #1a73e8; color: white; }
+        .live-preview { background: #1e1e1e; color: #34a853; padding: 20px; min-height: 120px; border-radius: 12px; font-size: 18px; line-height: 1.8; white-space: pre-wrap; text-align: right; border: 2px solid #333; margin-bottom: 25px; }
+        table { width: 100%; border-collapse: collapse; background: white; overflow: hidden; border-radius: 10px; }
+        th, td { border: 1px solid #e8eaed; padding: 18px; text-align: center; }
+        th { background-color: #1a73e8; color: white; font-size: 16px; }
         tr:nth-child(even) { background-color: #f8f9fa; }
+        tr:hover { background-color: #f1f3f4; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>نظام حمامة ديلفري - معالجة الطلبات</h2>
-        <div class="project-name">وكالة فلسطين الرقمية | إدارة العمليات</div>
-        <div id="status" class="status-msg">الحالة: جاهز</div>
+        <h2>نظام إدارة عمليات حمامة ديلفري</h2>
+        <div class="project-info">وكالة فلسطين الرقمية | منصة المعالجة اللحظية</div>
+        
+        <div id="status" class="status-bar">الحالة: النظام جاهز للعمل</div>
         
         <div class="controls">
-            <button id="startBtn">بدء التسجيل</button>
-            <button id="stopBtn" disabled>تحليل وإيقاف</button>
+            <button id="startBtn">بدء الاستماع الدائم</button>
+            <button id="stopBtn" disabled>تحليل البيانات وإيقاف</button>
         </div>
 
-        <div id="liveText" class="live-preview"></div>
+        <div id="liveText" class="live-preview">النص المسجل سيظهر هنا...</div>
 
         <table id="deliveryTable">
             <thead>
                 <tr>
                     <th>اسم الزبون</th>
-                    <th>العنوان</th>
-                    <th>الطلب</th>
-                    <th>السعر</th>
+                    <th>العنوان والمنطقة</th>
+                    <th>تفاصيل الطلب</th>
+                    <th>السعر (شيكل)</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -59,8 +62,8 @@
         const statusMsg = document.getElementById('status');
 
         let recognition;
-        let isManualStop = false;
-        let accumulatedTranscript = ""; // لحل مشكلة اختفاء النص عند السكوت
+        let isManualStop = true; 
+        let permanentText = ""; // الخزان الذي لا يتأثر بإعادة تشغيل الميكروفون
 
         if ('webkitSpeechRecognition' in window) {
             recognition = new webkitSpeechRecognition();
@@ -68,31 +71,38 @@
             recognition.continuous = true;
             recognition.interimResults = true;
 
+            // إعادة التشغيل التلقائي فوراً عند أي توقف تقني من المتصفح
             recognition.onend = () => {
-                if (!isManualStop) recognition.start();
+                if (!isManualStop) {
+                    recognition.start();
+                }
             };
 
             recognition.onresult = (event) => {
                 let interimTranscript = "";
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
-                        accumulatedTranscript += event.results[i][0].transcript + " ";
+                        permanentText += event.results[i][0].transcript + " ";
                     } else {
                         interimTranscript += event.results[i][0].transcript;
                     }
                 }
-                liveText.innerText = accumulatedTranscript + interimTranscript;
+                liveText.innerText = permanentText + interimTranscript;
+            };
+
+            recognition.onerror = (event) => {
+                console.warn("Recognition notice:", event.error);
             };
         }
 
         startBtn.onclick = () => {
             isManualStop = false;
-            accumulatedTranscript = "";
+            permanentText = ""; 
             liveText.innerText = "";
             recognition.start();
             startBtn.disabled = true;
             stopBtn.disabled = false;
-            statusMsg.innerText = "جاري التسجيل المستمر...";
+            statusMsg.innerText = "الميكروفون نشط.. النظام يسجل الآن";
         };
 
         stopBtn.onclick = () => {
@@ -101,13 +111,14 @@
             startBtn.disabled = false;
             stopBtn.disabled = true;
             
-            if (liveText.innerText.trim()) {
-                statusMsg.innerText = "جاري التحليل المعمق...";
-                analyzeWithGroq(liveText.innerText.trim());
+            const textToProcess = liveText.innerText.trim();
+            if (textToProcess && textToProcess !== "النص المسجل سيظهر هنا...") {
+                statusMsg.innerText = "جاري معالجة البيانات بأسلوب صحفي رسمي...";
+                analyzeData(textToProcess);
             }
         };
 
-        async function analyzeWithGroq(text) {
+        async function analyzeData(text) {
             const url = "https://api.groq.com/openai/v1/chat/completions";
             try {
                 const response = await fetch(url, {
@@ -120,39 +131,34 @@
                         model: "llama-3.3-70b-versatile",
                         messages: [{
                             role: "user",
-                            content: `استخرج الطلبات كـ JSON Array. لا تضع أي علامات ترقيم (فواصل أو نقاط) في النصوص العربية. الحقول: (customer_name, location, order_details, price). إذا كان هناك أكثر من طلب استخرجهم جميعاً في مصفوفة واحدة. النص: ${text}`
+                            content: `أنت محرر بيانات في وكالة فلسطين الرقمية. استخرج طلبات "حمامة ديلفري" من النص التالي وحولها إلى مصفوفة JSON Array. التزم بالأسلوب الرسمي الفصيح ولا تضع فواصل أو نقاط نهائياً في القيم النصية. الحقول المطلوبة: (customer_name, location, order_details, price). النص: ${text}`
                         }],
                         response_format: { type: "json_object" }
                     })
                 });
 
                 const data = await response.json();
-                const rawContent = data.choices[0].message.content;
-                const result = JSON.parse(rawContent);
+                const content = JSON.parse(data.choices[0].message.content);
                 
-                // حل مشكلة TypeError: البحث عن المصفوفة داخل الكائن بأي مسمى
-                let orders = [];
-                if (Array.isArray(result)) {
-                    orders = result;
-                } else {
-                    const keys = Object.keys(result);
-                    orders = Array.isArray(result[keys[0]]) ? result[keys[0]] : [result];
-                }
+                // البحث عن المصفوفة داخل الرد بأي مسمى يختاره الموديل
+                let orders = Array.isArray(content) ? content : (content.orders || content.deliveries || Object.values(content)[0]);
+                if (!Array.isArray(orders)) orders = [orders];
 
                 orders.forEach(item => {
                     if(item.customer_name || item.order_details) {
-                        tableBody.innerHTML += `<tr>
+                        const row = `<tr>
                             <td>${item.customer_name || "-"}</td>
                             <td>${item.location || "-"}</td>
                             <td>${item.order_details || "-"}</td>
                             <td>${item.price || "0"}</td>
                         </tr>`;
+                        tableBody.innerHTML += row;
                     }
                 });
-                statusMsg.innerText = "تمت إضافة البيانات للجدول.";
+                statusMsg.innerText = "تم تحديث سجلات العمليات بنجاح";
             } catch (e) {
-                statusMsg.innerText = "حدث خطأ في معالجة البيانات.";
-                console.error("Error details:", e);
+                statusMsg.innerText = "خطأ في المعالجة الرقمية";
+                console.error(e);
             }
         }
     </script>
