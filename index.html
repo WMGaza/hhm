@@ -3,46 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام حمامة ديلفري الذكي</title>
+    <title>نظام حمامة ديلفري الذكي - النسخة السريعة</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
         .container { width: 95%; max-width: 1100px; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
         h2 { color: #1a73e8; border-bottom: 2px solid #e8eaed; padding-bottom: 10px; margin-bottom: 5px; }
         .project-name { color: #5f6368; font-size: 14px; margin-bottom: 20px; }
+        .status-msg { font-weight: bold; color: #1a73e8; margin-bottom: 15px; }
         .controls { margin: 20px 0; }
         button { padding: 12px 25px; font-size: 16px; cursor: pointer; border: none; border-radius: 8px; margin-left: 10px; transition: 0.2s; font-weight: bold; }
         #startBtn { background-color: #34a853; color: white; }
         #stopBtn { background-color: #ea4335; color: white; }
         button:disabled { background-color: #dadce0; cursor: not-allowed; }
         .live-preview { background: #f8f9fa; border-right: 4px solid #1a73e8; padding: 15px; margin: 15px 0; min-height: 60px; color: #333; line-height: 1.6; font-size: 18px; white-space: pre-wrap; text-align: right; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { border: 1px solid #e8eaed; padding: 15px; text-align: center; }
         th { background-color: #1a73e8; color: white; }
         tr:nth-child(even) { background-color: #f8f9fa; }
-        .status-msg { font-weight: bold; color: #1a73e8; margin-top: 5px; }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h2>نظام حمامة ديلفري - معالجة الطلبات</h2>
-        <div class="project-name">وكالة فلسطين الرقمية | إدارة العمليات</div>
-        <div class="status-msg" id="status">الحالة: جاهز للعمل</div>
+        <div class="project-name">وكالة فلسطين الرقمية | مدعوم بواسطة Groq</div>
+        <div id="status" class="status-msg">الحالة: جاهز للعمل</div>
         
         <div class="controls">
             <button id="startBtn">بدء التسجيل</button>
             <button id="stopBtn" disabled>تحليل الطلب</button>
         </div>
 
-        <div class="live-preview" id="liveText"></div>
+        <div id="liveText" class="live-preview"></div>
 
         <table id="deliveryTable">
             <thead>
                 <tr>
                     <th>اسم الزبون</th>
-                    <th>المنطقة / العنوان</th>
-                    <th>تفاصيل الطلب</th>
-                    <th>السعر (شيكل)</th>
+                    <th>العنوان</th>
+                    <th>الطلب</th>
+                    <th>السعر</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -50,7 +50,8 @@
     </div>
 
     <script>
-        const GEMINI_API_KEY = "AIzaSyCSeBUWqnloD4Qc8QVjvesz93TmgTIcMIE"; 
+        // مفتاح Groq الجديد الذي أرسلته
+        const GROQ_API_KEY = "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";
         
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
@@ -58,110 +59,76 @@
         const tableBody = document.querySelector('#deliveryTable tbody');
         const statusMsg = document.getElementById('status');
 
-        let finalTranscript = "";
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
+        let recognition;
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.lang = 'ar-SA';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+        }
 
-        recognition.lang = 'ar-SA';
-        recognition.continuous = true;
-        recognition.interimResults = true;
-
-        startBtn.addEventListener('click', () => {
-            finalTranscript = "";
+        startBtn.onclick = () => {
             liveText.innerText = "";
             recognition.start();
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
+            startBtn.disabled = true; stopBtn.disabled = false;
             statusMsg.innerText = "جاري الاستماع لطلبات حمامة ديلفري...";
-        });
-
-        recognition.onresult = (event) => {
-            let interimTranscript = "";
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript + " ";
-                } else {
-                    interimTranscript += event.results[i][0].transcript;
-                }
-            }
-            liveText.innerText = finalTranscript + interimTranscript;
         };
 
-        stopBtn.addEventListener('click', () => {
-            recognition.stop();
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            
-            const textToAnalyze = liveText.innerText.trim();
-            if (textToAnalyze) {
-                statusMsg.innerText = "جاري التحليل الرقمي...";
-                analyzeWithGemini(textToAnalyze);
+        recognition.onresult = (event) => {
+            let transcript = "";
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                transcript += event.results[i][0].transcript;
             }
-        });
+            liveText.innerText = transcript;
+        };
 
-        async function analyzeWithGemini(text) {
-            // استخدام المسمى الخام للموديل مع v1beta
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        stopBtn.onclick = () => {
+            recognition.stop();
+            startBtn.disabled = false; stopBtn.disabled = true;
+            if (liveText.innerText.trim()) {
+                statusMsg.innerText = "جاري التحليل فائق السرعة...";
+                analyzeWithGroq(liveText.innerText.trim());
+            }
+        };
+
+        async function analyzeWithGroq(text) {
+            const url = "https://api.groq.com/openai/v1/chat/completions";
             
-            const requestBody = {
-                contents: [{
-                    parts: [{
-                        text: `أنت موظف في شركة "حمامة ديلفري". استخرج البيانات التالية من النص بصيغة JSON Array فقط. يمنع منعاً باتاً استخدام الفواصل أو النقاط. البيانات المطلوبة: (customer_name, location, order_details, price). النص: "${text}"`
-                    }]
-                }]
-            };
-
             try {
                 const response = await fetch(url, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(requestBody)
+                    headers: {
+                        "Authorization": `Bearer ${GROQ_API_KEY}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [{
+                            role: "user",
+                            content: `استخرج الطلبات كـ JSON Array فقط بدون فواصل أو نقاط. الحقول: (customer_name, location, order_details, price). النص: ${text}`
+                        }],
+                        response_format: { type: "json_object" }
+                    })
                 });
 
                 const data = await response.json();
+                const result = JSON.parse(data.choices[0].message.content);
+                
+                // Groq قد يعيد كائن يحتوي على المصفوفة
+                const orders = Array.isArray(result) ? result : (result.orders || Object.values(result)[0]);
 
-                if (!response.ok) {
-                    // محاولة أخيرة مع موديل pro إذا فشل flash
-                    return tryProModel(text);
-                }
-
-                renderData(data);
-            } catch (error) {
-                statusMsg.innerText = "خطأ: " + error.message;
-            }
-        }
-
-        async function tryProModel(text) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
-            const requestBody = {
-                contents: [{ parts: [{ text: `استخرج الطلبات بصيغة JSON Array بدون فواصل أو نقاط: ${text}` }] }]
-            };
-            const response = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(requestBody)
-            });
-            const data = await response.json();
-            renderData(data);
-        }
-
-        function renderData(data) {
-            if (data.candidates && data.candidates[0].content) {
-                let content = data.candidates[0].content.parts[0].text;
-                const jsonMatch = content.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    let result = JSON.parse(jsonMatch[0]);
-                    if (!Array.isArray(result)) result = [result];
-                    result.forEach(item => {
-                        tableBody.innerHTML += `<tr>
-                            <td>${item.customer_name || "-"}</td>
-                            <td>${item.location || "-"}</td>
-                            <td>${item.order_details || "-"}</td>
-                            <td>${item.price || "0"}</td>
-                        </tr>`;
-                    });
-                    statusMsg.innerText = "تم التحديث بنجاح.";
-                }
+                orders.forEach(item => {
+                    tableBody.innerHTML += `<tr>
+                        <td>${item.customer_name || "-"}</td>
+                        <td>${item.location || "-"}</td>
+                        <td>${item.order_details || "-"}</td>
+                        <td>${item.price || "0"}</td>
+                    </tr>`;
+                });
+                statusMsg.innerText = "تم التحديث بنجاح.";
+            } catch (e) {
+                statusMsg.innerText = "فشل التحليل: " + e.message;
+                console.error(e);
             }
         }
     </script>
