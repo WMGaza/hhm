@@ -3,253 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام حمامة ديلفري - نسخة الهواتف</title>
+    <title>حمامة ديلفري - نسخة اللهجة العامية</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        :root {
-            --primary-color: #1a73e8;
-            --success-color: #34a853;
-            --danger-color: #ea4335;
-            --bg-color: #f8f9fa;
-        }
-
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: var(--bg-color); 
-            margin: 0;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .container { 
-            width: 100%; 
-            max-width: 1100px; 
-            background: white; 
-            padding: 15px; 
-            border-radius: 15px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            box-sizing: border-box;
-        }
-
-        h2 { 
-            color: var(--primary-color); 
-            font-size: 1.4rem;
-            text-align: center;
-            margin-bottom: 5px;
-        }
-
-        .project-info { 
-            color: #70757a; 
-            font-size: 12px; 
-            text-align: center; 
-            margin-bottom: 20px; 
-        }
-
-        .status-bar { 
-            font-weight: bold; 
-            color: var(--primary-color); 
-            background: #e8f0fe; 
-            padding: 12px; 
-            border-radius: 10px; 
-            margin-bottom: 15px; 
-            text-align: center;
-            font-size: 14px;
-        }
-
-        .controls { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 10px; 
-            margin-bottom: 20px; 
-        }
-
-        button { 
-            padding: 15px 10px; 
-            font-size: 15px; 
-            cursor: pointer; 
-            border: none; 
-            border-radius: 12px; 
-            font-weight: bold; 
-            transition: 0.2s;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        #startBtn { background-color: var(--success-color); color: white; }
-        #stopBtn { background-color: var(--danger-color); color: white; }
-        button:disabled { background-color: #dadce0; opacity: 0.7; }
-
-        .live-preview { 
-            background: #202124; 
-            color: #8ab4f8; 
-            padding: 15px; 
-            min-height: 80px; 
-            max-height: 200px;
-            overflow-y: auto;
-            border-radius: 12px; 
-            font-size: 16px; 
-            line-height: 1.6; 
-            margin-bottom: 20px;
-            border: 1px solid #3c4043;
-        }
-
-        /* تصميم الجدول المستجيب للهواتف */
+        :root { --primary: #1a73e8; --success: #34a853; --danger: #ea4335; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 1100px; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { color: var(--primary); text-align: center; margin: 10px 0; }
+        .status-bar { font-weight: bold; color: var(--primary); background: #e8f0fe; padding: 12px; border-radius: 10px; margin-bottom: 15px; text-align: center; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        button { padding: 15px; font-size: 15px; cursor: pointer; border: none; border-radius: 12px; font-weight: bold; }
+        #startBtn { background: var(--success); color: white; }
+        #stopBtn { background: var(--danger); color: white; }
+        #exportBtn { background: #5f6368; color: white; grid-column: span 2; margin-top: 5px; }
+        .live-preview { background: #202124; color: #8ab4f8; padding: 15px; min-height: 80px; border-radius: 12px; font-size: 16px; margin-bottom: 20px; text-align: right; overflow-y: auto; }
         .table-container { width: 100%; overflow-x: auto; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-
-        th { 
-            background-color: var(--primary-color); 
-            color: white; 
-            padding: 12px; 
-            font-size: 14px;
-        }
-
-        td { 
-            border: 1px solid #e8eaed; 
-            padding: 12px; 
-            text-align: center; 
-            font-size: 14px;
-        }
-
-        /* تحويل الجدول لبطاقات عند فتح الكود من الموبايل */
+        table { width: 100%; border-collapse: collapse; }
+        th { background: var(--primary); color: white; padding: 12px; }
+        td { border: 1px solid #e8eaed; padding: 12px; text-align: center; }
         @media (max-width: 600px) {
-            table, thead, tbody, th, td, tr { display: block; }
-            thead tr { position: absolute; top: -9999px; left: -9999px; }
-            tr { 
-                margin-bottom: 15px; 
-                border: 1px solid #ddd; 
-                border-radius: 10px; 
-                padding: 10px;
-                background: #fff;
-            }
-            td { 
-                border: none; 
-                position: relative; 
-                padding-right: 50%; 
-                text-align: left; 
-                border-bottom: 1px solid #eee;
-            }
-            td:last-child { border-bottom: 0; }
-            td:before { 
-                position: absolute; 
-                right: 10px; 
-                width: 45%; 
-                white-space: nowrap; 
-                font-weight: bold;
-                content: attr(data-label);
-                text-align: right;
-                color: var(--primary-color);
-            }
+            td { display: block; text-align: left; padding-right: 50%; position: relative; border: none; border-bottom: 1px solid #eee; }
+            td:before { position: absolute; right: 10px; font-weight: bold; content: attr(data-label); color: var(--primary); }
+            tr { display: block; border: 1px solid #ddd; margin-bottom: 10px; border-radius: 10px; padding: 10px; }
+            thead { display: none; }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2>نظام حمامة ديلفري</h2>
-        <div class="project-info">وكالة فلسطين الرقمية | نسخة الجوال</div>
-        
-        <div id="status" class="status-bar">جاهز للعمل</div>
-        
-        <div class="controls">
-            <button id="startBtn">بدء التسجيل</button>
-            <button id="stopBtn" disabled>تحليل</button>
-        </div>
-
-        <div id="liveText" class="live-preview">اضغط بدء وتحدث...</div>
-
-        <div class="table-container">
-            <table id="deliveryTable">
-                <thead>
-                    <tr>
-                        <th>الزبون</th>
-                        <th>العنوان</th>
-                        <th>الطلب</th>
-                        <th>السعر</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
+<div class="container">
+    <h2>حمامة ديلفري - كشف الطلبات العامي</h2>
+    <div id="status" class="status-bar">جاهز لسماع اللكنة الفلسطينية والغزاوية</div>
+    
+    <div class="controls">
+        <button id="startBtn">ابدأ التسجيل</button>
+        <button id="stopBtn" disabled>حلّل الكلام</button>
+        <button id="exportBtn">تصدير إكسل (Excel)</button>
     </div>
 
-    <script>
-        const GROQ_API_KEY = "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";
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const liveText = document.getElementById('liveText');
-        const tableBody = document.querySelector('#deliveryTable tbody');
-        const statusMsg = document.getElementById('status');
+    <div id="liveText" class="live-preview">احكي براحتك.. الميكروفون بيفهمك..</div>
 
-        let recognition;
-        let isManualStop = true;
-        let permanentText = "";
+    <div class="table-container">
+        <table id="deliveryTable">
+            <thead>
+                <tr>
+                    <th>الزبون</th>
+                    <th>المنطقة</th>
+                    <th>الطلب</th>
+                    <th>السعر</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</div>
 
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            recognition = new SpeechRecognition();
-            recognition.lang = 'ar-SA';
-            recognition.continuous = true;
-            recognition.interimResults = true;
+<script>
+    const GROQ_API_KEY = "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";
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const liveText = document.getElementById('liveText');
+    const tableBody = document.querySelector('#deliveryTable tbody');
+    const statusMsg = document.getElementById('status');
 
-            recognition.onend = () => { if (!isManualStop) recognition.start(); };
+    let recognition;
+    let isManualStop = true;
+    let permanentText = "";
 
-            recognition.onresult = (event) => {
-                let interim = "";
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) permanentText += event.results[i][0].transcript + " ";
-                    else interim += event.results[i][0].transcript;
-                }
-                liveText.innerText = permanentText + interim;
-            };
-        }
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'ar-SA'; 
+        recognition.continuous = true;
+        recognition.interimResults = true;
 
-        startBtn.onclick = () => {
-            isManualStop = false; permanentText = ""; liveText.innerText = "";
-            recognition.start();
-            startBtn.disabled = true; stopBtn.disabled = false;
-            statusMsg.innerText = "جاري التسجيل المستمر...";
-        };
-
-        stopBtn.onclick = () => {
-            isManualStop = true; recognition.stop();
-            startBtn.disabled = false; stopBtn.disabled = true;
-            if (liveText.innerText.trim()) {
-                statusMsg.innerText = "جاري التحليل...";
-                analyzeData(liveText.innerText.trim());
+        recognition.onend = () => { if (!isManualStop) recognition.start(); };
+        recognition.onresult = (event) => {
+            let interim = "";
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) permanentText += event.results[i][0].transcript + " ";
+                else interim += event.results[i][0].transcript;
             }
+            liveText.innerText = permanentText + interim;
         };
+    }
 
-        async function analyzeData(text) {
-            try {
-                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        model: "llama-3.3-70b-versatile",
-                        messages: [{ role: "user", content: `استخرج الطلبات كـ JSON Array بدون فواصل أو نقاط. الحقول: (customer_name, location, order_details, price). النص: ${text}` }],
-                        response_format: { type: "json_object" }
-                    })
-                });
-                const data = await response.json();
-                const content = JSON.parse(data.choices[0].message.content);
-                let orders = Array.isArray(content) ? content : (content.orders || Object.values(content)[0]);
-                if (!Array.isArray(orders)) orders = [orders];
+    startBtn.onclick = () => {
+        isManualStop = false; permanentText = ""; liveText.innerText = "";
+        recognition.start();
+        startBtn.disabled = true; stopBtn.disabled = false;
+        statusMsg.innerText = "الميكروفون شغال.. بسمعك بلهجتك";
+    };
 
-                orders.forEach(item => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td data-label="الزبون">${item.customer_name || "-"}</td>
-                        <td data-label="العنوان">${item.location || "-"}</td>
-                        <td data-label="الطلب">${item.order_details || "-"}</td>
-                        <td data-label="السعر">${item.price || "0"}</td>
-                    `;
-                    tableBody.appendChild(row);
-                });
-                statusMsg.innerText = "تمت الإضافة بنجاح";
-            } catch (e) { statusMsg.innerText = "خطأ في المعالجة"; }
+    stopBtn.onclick = () => {
+        isManualStop = true; recognition.stop();
+        startBtn.disabled = false; stopBtn.disabled = true;
+        if (liveText.innerText.trim()) {
+            statusMsg.innerText = "بحلل في الكلام الفلسطيني...";
+            analyzeData(liveText.innerText.trim());
         }
-    </script>
+    };
+
+    async function analyzeData(text) {
+        try {
+            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    messages: [{ 
+                        role: "user", 
+                        content: `أنت خبير في اللهجة الفلسطينية والغزاوية. استخرج البيانات من هذا الكلام المحكي وحوله لـ JSON Array. ركز على الأسماء والمناطق والأسعار. لا تضع نقاط أو فواصل. الحقول: (customer_name, location, order_details, price). الكلام: ${text}` 
+                    }],
+                    response_format: { type: "json_object" }
+                })
+            });
+            const data = await response.json();
+            const result = JSON.parse(data.choices[0].message.content);
+            let orders = Array.isArray(result) ? result : (result.orders || Object.values(result)[0]);
+            if (!Array.isArray(orders)) orders = [orders];
+
+            orders.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td data-label="الزبون">${item.customer_name || "-"}</td>
+                    <td data-label="المنطقة">${item.location || "-"}</td>
+                    <td data-label="الطلب">${item.order_details || "-"}</td>
+                    <td data-label="السعر">${item.price || "0"}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            statusMsg.innerText = "تمت الإضافة.. فيك تصدّر إكسل";
+        } catch (e) { statusMsg.innerText = "صار مشكلة في التحليل"; }
+    }
+
+    exportBtn.onclick = () => {
+        const table = document.getElementById("deliveryTable");
+        const wb = XLSX.utils.table_to_book(table, { sheet: "حمامة ديلفري" });
+        XLSX.writeFile(wb, "Talabat_Hamama.xlsx");
+    };
+</script>
 </body>
 </html>
