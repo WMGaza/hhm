@@ -2,59 +2,180 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام حمامة ديلفري - المعالجة الذكية</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام حمامة ديلفري - نسخة الهواتف</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .container { width: 95%; max-width: 1100px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
-        h2 { color: #1a73e8; border-bottom: 2px solid #e8eaed; padding-bottom: 15px; margin-bottom: 5px; text-align: center; }
-        .project-info { color: #70757a; font-size: 14px; text-align: center; margin-bottom: 25px; }
-        .status-bar { font-weight: bold; color: #1a73e8; background: #e8f0fe; padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: center; }
-        .controls { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
-        button { padding: 15px 30px; font-size: 16px; cursor: pointer; border: none; border-radius: 10px; transition: 0.3s; font-weight: bold; elevation: 2; }
-        #startBtn { background-color: #34a853; color: white; }
-        #stopBtn { background-color: #ea4335; color: white; }
-        button:hover:not(:disabled) { opacity: 0.9; transform: translateY(-2px); }
-        button:disabled { background-color: #dadce0; cursor: not-allowed; }
-        .live-preview { background: #1e1e1e; color: #34a853; padding: 20px; min-height: 120px; border-radius: 12px; font-size: 18px; line-height: 1.8; white-space: pre-wrap; text-align: right; border: 2px solid #333; margin-bottom: 25px; }
-        table { width: 100%; border-collapse: collapse; background: white; overflow: hidden; border-radius: 10px; }
-        th, td { border: 1px solid #e8eaed; padding: 18px; text-align: center; }
-        th { background-color: #1a73e8; color: white; font-size: 16px; }
-        tr:nth-child(even) { background-color: #f8f9fa; }
-        tr:hover { background-color: #f1f3f4; }
+        :root {
+            --primary-color: #1a73e8;
+            --success-color: #34a853;
+            --danger-color: #ea4335;
+            --bg-color: #f8f9fa;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg-color); 
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container { 
+            width: 100%; 
+            max-width: 1100px; 
+            background: white; 
+            padding: 15px; 
+            border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-sizing: border-box;
+        }
+
+        h2 { 
+            color: var(--primary-color); 
+            font-size: 1.4rem;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .project-info { 
+            color: #70757a; 
+            font-size: 12px; 
+            text-align: center; 
+            margin-bottom: 20px; 
+        }
+
+        .status-bar { 
+            font-weight: bold; 
+            color: var(--primary-color); 
+            background: #e8f0fe; 
+            padding: 12px; 
+            border-radius: 10px; 
+            margin-bottom: 15px; 
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .controls { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+            margin-bottom: 20px; 
+        }
+
+        button { 
+            padding: 15px 10px; 
+            font-size: 15px; 
+            cursor: pointer; 
+            border: none; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            transition: 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #startBtn { background-color: var(--success-color); color: white; }
+        #stopBtn { background-color: var(--danger-color); color: white; }
+        button:disabled { background-color: #dadce0; opacity: 0.7; }
+
+        .live-preview { 
+            background: #202124; 
+            color: #8ab4f8; 
+            padding: 15px; 
+            min-height: 80px; 
+            max-height: 200px;
+            overflow-y: auto;
+            border-radius: 12px; 
+            font-size: 16px; 
+            line-height: 1.6; 
+            margin-bottom: 20px;
+            border: 1px solid #3c4043;
+        }
+
+        /* تصميم الجدول المستجيب للهواتف */
+        .table-container { width: 100%; overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+
+        th { 
+            background-color: var(--primary-color); 
+            color: white; 
+            padding: 12px; 
+            font-size: 14px;
+        }
+
+        td { 
+            border: 1px solid #e8eaed; 
+            padding: 12px; 
+            text-align: center; 
+            font-size: 14px;
+        }
+
+        /* تحويل الجدول لبطاقات عند فتح الكود من الموبايل */
+        @media (max-width: 600px) {
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; top: -9999px; left: -9999px; }
+            tr { 
+                margin-bottom: 15px; 
+                border: 1px solid #ddd; 
+                border-radius: 10px; 
+                padding: 10px;
+                background: #fff;
+            }
+            td { 
+                border: none; 
+                position: relative; 
+                padding-right: 50%; 
+                text-align: left; 
+                border-bottom: 1px solid #eee;
+            }
+            td:last-child { border-bottom: 0; }
+            td:before { 
+                position: absolute; 
+                right: 10px; 
+                width: 45%; 
+                white-space: nowrap; 
+                font-weight: bold;
+                content: attr(data-label);
+                text-align: right;
+                color: var(--primary-color);
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>نظام إدارة عمليات حمامة ديلفري</h2>
-        <div class="project-info">وكالة فلسطين الرقمية | منصة المعالجة اللحظية</div>
+        <h2>نظام حمامة ديلفري</h2>
+        <div class="project-info">وكالة فلسطين الرقمية | نسخة الجوال</div>
         
-        <div id="status" class="status-bar">الحالة: النظام جاهز للعمل</div>
+        <div id="status" class="status-bar">جاهز للعمل</div>
         
         <div class="controls">
-            <button id="startBtn">بدء الاستماع الدائم</button>
-            <button id="stopBtn" disabled>تحليل البيانات وإيقاف</button>
+            <button id="startBtn">بدء التسجيل</button>
+            <button id="stopBtn" disabled>تحليل</button>
         </div>
 
-        <div id="liveText" class="live-preview">النص المسجل سيظهر هنا...</div>
+        <div id="liveText" class="live-preview">اضغط بدء وتحدث...</div>
 
-        <table id="deliveryTable">
-            <thead>
-                <tr>
-                    <th>اسم الزبون</th>
-                    <th>العنوان والمنطقة</th>
-                    <th>تفاصيل الطلب</th>
-                    <th>السعر (شيكل)</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <div class="table-container">
+            <table id="deliveryTable">
+                <thead>
+                    <tr>
+                        <th>الزبون</th>
+                        <th>العنوان</th>
+                        <th>الطلب</th>
+                        <th>السعر</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 
     <script>
         const GROQ_API_KEY = "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";
-        
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
         const liveText = document.getElementById('liveText');
@@ -62,104 +183,72 @@
         const statusMsg = document.getElementById('status');
 
         let recognition;
-        let isManualStop = true; 
-        let permanentText = ""; // الخزان الذي لا يتأثر بإعادة تشغيل الميكروفون
+        let isManualStop = true;
+        let permanentText = "";
 
-        if ('webkitSpeechRecognition' in window) {
-            recognition = new webkitSpeechRecognition();
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
             recognition.lang = 'ar-SA';
             recognition.continuous = true;
             recognition.interimResults = true;
 
-            // إعادة التشغيل التلقائي فوراً عند أي توقف تقني من المتصفح
-            recognition.onend = () => {
-                if (!isManualStop) {
-                    recognition.start();
-                }
-            };
+            recognition.onend = () => { if (!isManualStop) recognition.start(); };
 
             recognition.onresult = (event) => {
-                let interimTranscript = "";
+                let interim = "";
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        permanentText += event.results[i][0].transcript + " ";
-                    } else {
-                        interimTranscript += event.results[i][0].transcript;
-                    }
+                    if (event.results[i].isFinal) permanentText += event.results[i][0].transcript + " ";
+                    else interim += event.results[i][0].transcript;
                 }
-                liveText.innerText = permanentText + interimTranscript;
-            };
-
-            recognition.onerror = (event) => {
-                console.warn("Recognition notice:", event.error);
+                liveText.innerText = permanentText + interim;
             };
         }
 
         startBtn.onclick = () => {
-            isManualStop = false;
-            permanentText = ""; 
-            liveText.innerText = "";
+            isManualStop = false; permanentText = ""; liveText.innerText = "";
             recognition.start();
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-            statusMsg.innerText = "الميكروفون نشط.. النظام يسجل الآن";
+            startBtn.disabled = true; stopBtn.disabled = false;
+            statusMsg.innerText = "جاري التسجيل المستمر...";
         };
 
         stopBtn.onclick = () => {
-            isManualStop = true;
-            recognition.stop();
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            
-            const textToProcess = liveText.innerText.trim();
-            if (textToProcess && textToProcess !== "النص المسجل سيظهر هنا...") {
-                statusMsg.innerText = "جاري معالجة البيانات بأسلوب صحفي رسمي...";
-                analyzeData(textToProcess);
+            isManualStop = true; recognition.stop();
+            startBtn.disabled = false; stopBtn.disabled = true;
+            if (liveText.innerText.trim()) {
+                statusMsg.innerText = "جاري التحليل...";
+                analyzeData(liveText.innerText.trim());
             }
         };
 
         async function analyzeData(text) {
-            const url = "https://api.groq.com/openai/v1/chat/completions";
             try {
-                const response = await fetch(url, {
+                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${GROQ_API_KEY}`,
-                        "Content-Type": "application/json"
-                    },
+                    headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
                     body: JSON.stringify({
                         model: "llama-3.3-70b-versatile",
-                        messages: [{
-                            role: "user",
-                            content: `أنت محرر بيانات في وكالة فلسطين الرقمية. استخرج طلبات "حمامة ديلفري" من النص التالي وحولها إلى مصفوفة JSON Array. التزم بالأسلوب الرسمي الفصيح ولا تضع فواصل أو نقاط نهائياً في القيم النصية. الحقول المطلوبة: (customer_name, location, order_details, price). النص: ${text}`
-                        }],
+                        messages: [{ role: "user", content: `استخرج الطلبات كـ JSON Array بدون فواصل أو نقاط. الحقول: (customer_name, location, order_details, price). النص: ${text}` }],
                         response_format: { type: "json_object" }
                     })
                 });
-
                 const data = await response.json();
                 const content = JSON.parse(data.choices[0].message.content);
-                
-                // البحث عن المصفوفة داخل الرد بأي مسمى يختاره الموديل
-                let orders = Array.isArray(content) ? content : (content.orders || content.deliveries || Object.values(content)[0]);
+                let orders = Array.isArray(content) ? content : (content.orders || Object.values(content)[0]);
                 if (!Array.isArray(orders)) orders = [orders];
 
                 orders.forEach(item => {
-                    if(item.customer_name || item.order_details) {
-                        const row = `<tr>
-                            <td>${item.customer_name || "-"}</td>
-                            <td>${item.location || "-"}</td>
-                            <td>${item.order_details || "-"}</td>
-                            <td>${item.price || "0"}</td>
-                        </tr>`;
-                        tableBody.innerHTML += row;
-                    }
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td data-label="الزبون">${item.customer_name || "-"}</td>
+                        <td data-label="العنوان">${item.location || "-"}</td>
+                        <td data-label="الطلب">${item.order_details || "-"}</td>
+                        <td data-label="السعر">${item.price || "0"}</td>
+                    `;
+                    tableBody.appendChild(row);
                 });
-                statusMsg.innerText = "تم تحديث سجلات العمليات بنجاح";
-            } catch (e) {
-                statusMsg.innerText = "خطأ في المعالجة الرقمية";
-                console.error(e);
-            }
+                statusMsg.innerText = "تمت الإضافة بنجاح";
+            } catch (e) { statusMsg.innerText = "خطأ في المعالجة"; }
         }
     </script>
 </body>
